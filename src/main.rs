@@ -16,7 +16,7 @@ use graphics::{
 
 
 fn main() {
-    let mut convert = pipe_to_magick(vec!["ppm:-", "img.png"]);
+    let mut convert = pipe_to_magick(vec!["ppm:-", "img.gif"]);
 
     // child should have a stdin, so we directly unwrap
     let mut magick_in = convert.stdin.take().unwrap();
@@ -32,7 +32,7 @@ fn main() {
     // let purple = RGB::new(209, 66, 245);
     // let brown = RGB::new(212, 143, 78);
 
-    for rot in (0..360).into_iter().step_by(120) {
+    for rot in (0..360).into_iter().step_by(10) {
         let mut stack: Vec<Matrix> = Vec::<Matrix>::new_stack();
 
         // moving to the center

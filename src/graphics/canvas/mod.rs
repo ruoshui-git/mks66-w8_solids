@@ -1,3 +1,5 @@
+extern crate rand;
+use rand::Rng;
 use crate::graphics::{
     matrix::{mstack::MStack, Matrix},
     utils::{mapper, polar_to_xy},
@@ -5,13 +7,8 @@ use crate::graphics::{
     RGB,
 };
 
-extern crate rand;
-use super::utils;
-use rand::Rng;
-use std::cmp::Ordering;
-
+// turtle will cause problems
 // mod turtle;
-// turtle will cause problems with
 
 pub trait Canvas {
     /// Plot a point on the screen at (`x`, `y`, `z`)
@@ -220,10 +217,10 @@ pub trait Canvas {
             if surface_normal.2 <= 0. {
                 continue;
             }
-            self.set_fg_color(RGB::new(255, 255, 255));
-            self.draw_line(p0, p1);
-            self.draw_line(p1, p2);
-            self.draw_line(p2, p0);
+            // self.set_fg_color(RGB::new(255, 255, 255));
+            // self.draw_line(p0, p1);
+            // self.draw_line(p1, p2);
+            // self.draw_line(p2, p0);
 
             // draw scanlines
             {
@@ -239,67 +236,46 @@ pub trait Canvas {
                 points.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
                 let [vb, vm, vt] = points;
 
-                // deal with special case
-                if (vb.y() - vm.y()).abs() <= 1. {
-                    // two bottom vertices on same horizontal line
-                    let d0: Vec3 = (vt - vb) / (vt.y() - vb.y() + 1.);
-                    let d1: Vec3 = (vt - vm) / (vt.y() - vm.y() + 1.);
+                if (vb.y() - vm.y()).abs() == 0. {
+                    // special: two bottom vertices on same horizontal line
+                    let d0: Vec3 = (vt - vb) / (vt.y() - vb.y());
+                    let d1: Vec3 = (vt - vm) / (vt.y() - vm.y());
 
-                    let (mut x0, mut z0, mut x1, mut z1) = (vb.x(), vb.z(), vm.x(), vm.z());
-                    let mut y = vb.y();
-                    let ytop = vt.y();
-                    while y < ytop {
-                        self.draw_scanline((x0, y, z0), (x1, y, z1));
+                    let yoffsetb = vb.y().ceil() - vb.y();
+                    let yoffsetm = vm.y().ceil() - vm.y();
 
-                        x0 += d0.x();
-                        z0 += d0.z();
+                    let (mut z0, mut z1) = (vb.z(), vm.z());
 
-                        x1 += d1.x();
-                        z1 += d1.z();
+                    let mut x0 = vb.x() + yoffsetb * d0.x();
+                    let mut x1 = vm.x() + yoffsetm * d1.x();
 
-                        y += 1.;
-
-                        if x1 > 500. {
-                            println!("first case x0 - x1: {} - {}", x0, x1);
-                        }
-                    }
-                } else if (vm.y() - vt.y()).abs() <= 1. {
-                    // two top vertices on same y
-                    let d0: Vec3 = (vt - vb) / (vt.y() - vb.y() + 1.);
-                    let d1: Vec3 = (vm - vb) / (vm.y() - vb.y() + 1.);
-
-                    let (mut x0, mut z0, mut x1, mut z1) = (vb.x(), vb.z(), vb.x(), vb.z());
-                    let mut y = vb.y();
-                    let ytop = vt.y();
-                    while y < ytop {
-                        self.draw_scanline((x0, y, z0), (x1, y, z1));
+                    for y in (vb.y().ceil() as i64)..(vt.y().ceil() as i64) {
+                        self.draw_scanline((x0, y as f64, z0), (x1, y as f64, z1));
 
                         x0 += d0.x();
                         z0 += d0.z();
 
                         x1 += d1.x();
                         z1 += d1.z();
-
-                        y += 1.;
-
-                        if x1 > 500. {
-                            println!("sec case tri x0 - x1: {} - {}", x0, x1);
-                        }
                     }
                 } else {
                     // overall diff
-                    let dv: Vec3 = (vt - vb) / (vt.y() - vb.y() + 1.);
+                    let dv: Vec3 = (vt - vb) / (vt.y() - vb.y());
                     // bottom diff
-                    let dbottom: Vec3 = (vm - vb) / (vm.y() - vb.y() + 1.);
+                    let dbottom: Vec3 = (vm - vb) / (vm.y() - vb.y());
                     // top diff
-                    let dtop: Vec3 = (vt - vm) / (vt.y() - vm.y() + 1.);
+                    let dtop: Vec3 = (vt - vm) / (vt.y() - vm.y());
 
-                    let (mut x0, mut z0, mut x1, mut z1) = (vb.x(), vb.z(), vb.x(), vb.z());
+                    let yoffsetb = vb.y().ceil() - vb.y();
+                    let yoffsetm = vm.y().ceil() - vm.y();
 
-                    // Todo: maybe fix imprecise value of y
-                    let mut y = vb.y();
-                    let ymid = vm.y();
-                    while y < ymid {
+                    let (mut z0, mut z1) = (vb.z(), vb.z());
+
+                    let mut x0 = vb.x() + yoffsetb * dv.x();
+                    let mut x1 = vb.x() + yoffsetb * dbottom.x();
+                    let mut x2 = vm.x() + yoffsetm * dtop.x();
+
+                    for y in (vb.y().ceil() as i64)..(vm.y().ceil() as i64) {
                         self.draw_scanline((x0, y as f64, z0), (x1, y as f64, z1));
 
                         x0 += dv.x();
@@ -307,26 +283,14 @@ pub trait Canvas {
 
                         z0 += dv.z();
                         z1 += dbottom.z();
-
-                        y += 1.;
-
-                        if x1 > 500. {
-                            println!("third tri x0 - x1: {} - {}", x0, x1);
-                            println!("vt: {:?}", vt);
-                            println!("vm: {:?}", vm);
-                            println!("vb: {:?}", vb);
-                        }
                     }
-                    let ytop = vt.y();
-                    while y < ytop {
-                        self.draw_scanline((x0, y as f64, z0), (x1, y as f64, z1));
+                    for y in (vm.y().ceil() as i64)..(vt.y().ceil() as i64) {
+                        self.draw_scanline((x0, y as f64, z0), (x2, y as f64, z1));
 
                         x0 += dv.x();
-                        x1 += dtop.x();
+                        x2 += dtop.x();
                         z0 += dv.z();
                         z1 += dtop.z();
-
-                        y += 1.;
                     }
                 }
             }
@@ -341,10 +305,10 @@ pub trait Canvas {
         let (p0, p1) = if p0.0 > p1.0 { (p1, p0) } else { (p0, p1) };
 
         let (x0, y0, z0, x1, z1) = (
-            p0.0.round() as i32,
-            p0.1.round() as i32,
+            p0.0.ceil() as i64,
+            p0.1.ceil() as i64,
             p0.2,
-            p1.0.round() as i32,
+            p1.0.ceil() as i64,
             p1.2,
         );
 
@@ -356,7 +320,7 @@ pub trait Canvas {
         let mut z = z0;
 
         let z_inc = dz / dx as f64;
-        for x in x0..=x1 {
+        for x in x0..x1 {
             self.plot(x as i32, y0 as i32, z);
             z += z_inc;
         }

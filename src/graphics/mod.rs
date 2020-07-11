@@ -216,10 +216,10 @@ impl Canvas for PPMImg {
         // make the origin to be lower left corner
         let y = self.height as i32 - 1 - y;
         if let Some(index) = self.index(x, y) {
-            // if self.zbuf[index] < z {
+            if self.zbuf[index] < z {
                 self.data[index] = self.fg_color;
-                // self.zbuf[index] = z;
-            // }
+                self.zbuf[index] = z;
+            }
         }
     }
     fn set_fg_color(&mut self, color: RGB) {
