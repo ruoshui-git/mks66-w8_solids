@@ -5,9 +5,9 @@ pub mod colors;
 pub mod matrix;
 pub mod parametrics;
 pub mod parser;
+pub mod processes;
 pub mod utils;
 pub mod vector;
-pub mod processes;
 
 use std::convert::TryInto;
 
@@ -23,8 +23,8 @@ pub use matrix::Matrix;
 
 // internal use
 use io::BufWriter;
-use utils::create_file;
 use processes::pipe_to_magick;
+use utils::create_file;
 
 pub struct PPMImg {
     height: u32,
@@ -36,6 +36,7 @@ pub struct PPMImg {
     pub fg_color: RGB,
     pub bg_color: RGB,
     data: Vec<RGB>,
+    zbuf: Vec<f64>,
 }
 
 /// Two images are eq iff their dimensions, depth, and image data are eq
@@ -79,6 +80,7 @@ impl PPMImg {
             fg_color: RGB::gray(depth),
             bg_color,
             data: vec![bg_color; (width * height).try_into().unwrap()],
+            zbuf: vec![f64::NEG_INFINITY; (width * height).try_into().unwrap()],
         }
     }
 
@@ -123,17 +125,17 @@ impl PPMImg {
         if filepath.ends_with(".ppm") {
             self.write_binary(filepath)
         } else {
-
-            let mut process = pipe_to_magick(vec!["ppm: -", filepath]);
+            let mut process = pipe_to_magick(vec!["ppm:-", filepath]);
 
             // This cmd should have a stdnin, so it's ok to unwrap
             let mut stdin = process.stdin.take().unwrap();
             self.write_bin_to_buf(&mut stdin)?;
 
+            drop(stdin);
             println!("Waiting for convert/magick to exit...");
             let output = process.wait().expect("Failed to wait on convert/magick");
             println!("convert/magick {}", output);
-            
+
             Ok(())
         }
 
@@ -153,6 +155,8 @@ impl PPMImg {
         for d in self.data.iter_mut() {
             *d = bg;
         }
+
+        self.zbuf = vec![f64::NEG_INFINITY; (self.height * self.width).try_into().unwrap()];
     }
 }
 
@@ -205,12 +209,17 @@ impl PPMImg {
 }
 
 impl Canvas for PPMImg {
-    /// plot a point on this PPMImg at (x, y)
-    fn plot(&mut self, x: i32, y: i32) -> () {
+    /// Plot a point on this PPMImg at (`x`, `y`, `z`)
+    ///
+    /// `z` is used for depth-buffer. Will only plot if `z` is closer to screen (new_z > existing_z).
+    fn plot(&mut self, x: i32, y: i32, z: f64) -> () {
         // make the origin to be lower left corner
         let y = self.height as i32 - 1 - y;
         if let Some(index) = self.index(x, y) {
-            self.data[index] = self.fg_color;
+            // if self.zbuf[index] < z {
+                self.data[index] = self.fg_color;
+                // self.zbuf[index] = z;
+            // }
         }
     }
     fn set_fg_color(&mut self, color: RGB) {

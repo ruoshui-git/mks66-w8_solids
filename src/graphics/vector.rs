@@ -1,6 +1,6 @@
 use std::ops;
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Vec3(pub f64, pub f64, pub f64);
 
 impl Vec3 {
@@ -15,6 +15,16 @@ impl Vec3 {
             a.0 * b.1 - a.1 * b.0,
         )
     }
+
+    pub fn x(&self) -> f64 {
+        self.0
+    }
+    pub fn y(&self) -> f64 {
+        self.1
+    }
+    pub fn z(&self) -> f64 {
+        self.2
+    }
 }
 
 impl Vec3 {
@@ -28,6 +38,10 @@ impl Vec3 {
             self.2 * other.0 - self.0 * other.2,
             self.0 * other.1 - self.1 * other.0,
         )
+    }
+
+    pub fn from_pt(point: (f64, f64, f64)) -> Self {
+        Vec3(point.0, point.1, point.2)
     }
 }
 
@@ -49,5 +63,12 @@ impl ops::Add for Vec3 {
     type Output = Vec3;
     fn add(self, rhs: Self) -> Self::Output {
         Vec3(self.0 + rhs.0, self.1 + rhs.1, self.2 + rhs.2)
+    }
+}
+
+impl ops::Div<f64> for Vec3 {
+    type Output = Vec3;
+    fn div(self, rhs: f64) -> Self::Output {
+        Vec3(self.0 / rhs, self.1 / rhs, self.2 / rhs)
     }
 }
