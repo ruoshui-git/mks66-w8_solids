@@ -31,18 +31,11 @@ use std::{
     io::{self, prelude::*, BufReader},
 };
 
-use crate::graphics::{
-    matrix::{mstack::MStack, transform},
-    utils::{self, Dim},
-    Canvas, Matrix, PPMImg,
-};
+use crate::graphics::{drawer::Drawer, matrix::transform as tr, PPMImg};
 
 pub struct DWScript {
     filename: String,
-    edges: Matrix,
-    stack: Vec<Matrix>,
-    polygons: Matrix,
-    img: PPMImg,
+    drawer: Drawer,
     tmpfile_name: String,
 }
 
@@ -69,18 +62,8 @@ impl DWScript {
     pub fn new(filename: &str) -> Self {
         DWScript {
             filename: filename.to_string(),
-            edges: Matrix::new_edge_matrix(),
-            polygons: Matrix::new_polygon_matrix(),
-            stack: vec![Matrix::ident(4)],
-            img: PPMImg::new(500, 500, 255),
+            drawer: Drawer::new(Box::new(PPMImg::new(500, 500, 255))),
             tmpfile_name: String::from("tmp.ppm"),
-        }
-    }
-
-    fn render_with_top_stack(&mut self, m: &Matrix, dim: Dim) {
-        match dim {
-            Dim::D3 => self.img.render_polygon_matrix(&(m * self.stack.get_top())),
-            Dim::D2 => self.img.render_edge_matrix(&(m * self.stack.get_top())),
         }
     }
 
@@ -96,102 +79,96 @@ impl DWScript {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let pts: Vec<f64> = parse_floats(dline);
                     assert_eq!(6, pts.len());
-                    let mut edges = Matrix::new_edge_matrix();
-                    edges.append_edge(&pts);
-                    self.render_with_top_stack(&edges, Dim::D2);
+                    self.drawer
+                        .draw_line((pts[0], pts[1], pts[2]), (pts[3], pts[4], pts[5]));
                 }
                 "circle" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let values = parse_floats(dline);
                     assert_eq!(4, values.len());
-                    let mut edges = Matrix::new_edge_matrix();
-                    edges.add_circle((values[0], values[1], values[2]), values[3]);
-                    self.render_with_top_stack(&edges, Dim::D2);
+                    self.drawer
+                        .draw_circle((values[0], values[1], values[2]), values[3]);
                 }
                 "hermite" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v = parse_floats(dline);
                     assert_eq!(8, v.len());
-                    let mut edges = Matrix::new_edge_matrix();
-                    edges.add_hermite3((v[0], v[1]), (v[2], v[3]), (v[4], v[5]), (v[6], v[7]));
-                    self.render_with_top_stack(&edges, Dim::D2);
+                    self.drawer.draw_hermite(
+                        (v[0], v[1]),
+                        (v[2], v[3]),
+                        (v[4], v[5]),
+                        (v[6], v[7]),
+                    );
                 }
                 "bezier" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v = parse_floats(dline);
                     assert_eq!(8, v.len());
-                    let mut edges = Matrix::new_edge_matrix();
-                    edges.add_bezier3((v[0], v[1]), (v[2], v[3]), (v[4], v[5]), (v[6], v[7]));
-                    self.render_with_top_stack(&edges, Dim::D2);
+                    self.drawer
+                        .draw_bezier((v[0], v[1]), (v[2], v[3]), (v[4], v[5]), (v[6], v[7]));
                 }
 
                 "scale" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let scale: Vec<f64> = parse_floats(dline);
                     assert_eq!(3, scale.len());
-                    self.stack
-                        .transform_top(&transform::scale(scale[0], scale[1], scale[2]));
+                    self.drawer
+                        .transform_by(&tr::scale(scale[0], scale[1], scale[2]));
                 }
                 "move" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let mv: Vec<f64> = parse_floats(dline);
                     assert_eq!(3, mv.len());
-                    self.stack
-                        .transform_top(&transform::mv(mv[0], mv[1], mv[2]));
+                    self.drawer.transform_by(&tr::mv(mv[0], mv[1], mv[2]));
                 }
                 "rotate" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v: Vec<&str> = dline.split(' ').collect();
                     let (axis, deg): (&str, f64) =
                         (v[0], v[1].parse().expect("Error parsing number"));
-                    self.stack.transform_top(&match axis {
-                        "x" => transform::rotatex(deg),
-                        "y" => transform::rotatey(deg),
-                        "z" => transform::rotatez(deg),
+                    self.drawer.transform_by(&match axis {
+                        "x" => tr::rotatex(deg),
+                        "y" => tr::rotatey(deg),
+                        "z" => tr::rotatez(deg),
                         _ => panic!("Unknown rotation axis on line {}", _dnum),
                     });
                 }
                 "display" => {
-                    utils::display_ppm(&self.img);
+                    self.drawer.display();
                 }
                 "save" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
-                    self.img.save(dline.as_str()).expect("Error saving image");
+                    self.drawer
+                        .save(dline.as_str())
+                        .expect("Error saving image");
                 }
                 "box" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v = parse_floats(dline);
                     assert_eq!(6, v.len());
-                    let mut m = Matrix::new_polygon_matrix();
-                    m.add_box((v[0], v[1], v[2]), v[3], v[4], v[5]);
-                    self.render_with_top_stack(&m, Dim::D3);
+                    self.drawer.add_box((v[0], v[1], v[2]), v[3], v[4], v[5]);
                 }
                 "sphere" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v = parse_floats(dline);
                     assert_eq!(4, v.len());
-                    let mut m = Matrix::new_polygon_matrix();
-                    m.add_sphere((v[0], v[1], v[2]), v[3]);
-                    self.render_with_top_stack(&m, Dim::D3);
+                    self.drawer.add_sphere((v[0], v[1], v[2]), v[3]);
                 }
                 "torus" => {
                     let (_dnum, dline) = getline_or_error(&mut lines);
                     let v = parse_floats(dline);
                     assert_eq!(5, v.len());
-                    let mut m = Matrix::new_polygon_matrix();
-                    m.add_torus((v[0], v[1], v[2]), v[3], v[4]);
-                    self.render_with_top_stack(&m, Dim::D3);
+                    self.drawer.add_torus((v[0], v[1], v[2]), v[3], v[4]);
                 }
-                // "clear" => {
-                //     // self.edges.clear();
-                //     // self.polygons.clear();
-                // }
+                "clear" => {
+                    self.drawer.clear();
+                }
                 "push" => {
                     // self.stack.push(self.stack.get_top().clone());
-                    self.stack.push_matrix();
+                    self.drawer.push_matrix();
                 }
                 "pop" => {
-                    self.stack.pop_matrix();
+                    self.drawer.pop_matrix();
                 }
                 _ => panic!("Unrecognized command on line {}: {}", num, line),
             }
