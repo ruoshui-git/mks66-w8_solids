@@ -1,11 +1,12 @@
 extern crate rand;
 use rand::Rng;
 use crate::graphics::{
-    matrix::{mstack::MStack, Matrix},
+    matrix::Matrix,
     utils::{mapper, polar_to_xy},
     vector::Vec3,
     RGB,
 };
+use std::io;
 
 // turtle will cause problems
 // mod turtle;
@@ -21,6 +22,14 @@ pub trait Canvas {
     fn get_bg_color(&self) -> RGB;
     fn width(&self) -> u32;
     fn height(&self) -> u32;
+    fn save(&self, filepath: &str) -> io::Result<()>;
+    fn write_to_buf(&self, writer: &mut dyn io::Write) -> io::Result<()>;
+
+    /// Display the image with imagemagick
+    fn display(&self);
+
+    /// Clear the canvas of all drawings and resets configurations like z-buffer
+    fn clear(&mut self);
 
     //----------------------------------------- default methods for drawing lines
 
@@ -329,13 +338,13 @@ pub trait Canvas {
             z += z_inc;
         }
     }
-    fn render_polygon_with_stack(&mut self, stack: &impl MStack<Matrix>, m: &Matrix) {
-        self.render_polygon_matrix(&(m * stack.get_top()));
-    }
+    // fn render_polygon_with_stack(&mut self, stack: &impl MStack<Matrix>, m: &Matrix) {
+    //     self.render_polygon_matrix(&(m * stack.get_top()));
+    // }
 
-    fn render_edges_with_stack(&mut self, stack: &impl MStack<Matrix>, m: &Matrix) {
-        self.render_edge_matrix(&(m * stack.get_top()));
-    }
+    // fn render_edges_with_stack(&mut self, stack: &impl MStack<Matrix>, m: &Matrix) {
+    //     self.render_edge_matrix(&(m * stack.get_top()));
+    // }
 }
 
 #[cfg(test)]

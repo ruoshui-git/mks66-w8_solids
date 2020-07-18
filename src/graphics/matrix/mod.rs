@@ -14,7 +14,7 @@ pub mod transform;
 pub mod dim2;
 pub mod dim3;
 pub mod parametrics;
-pub mod mstack;
+// pub mod mstack;
 
 #[derive(Clone, Debug)]
 /// Row major rectangular matrix
