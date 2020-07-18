@@ -244,10 +244,11 @@ pub trait Canvas {
                     let yoffsetb = vb.y().ceil() - vb.y();
                     let yoffsetm = vm.y().ceil() - vm.y();
 
-                    let (mut z0, mut z1) = (vb.z(), vm.z());
-
                     let mut x0 = vb.x() + yoffsetb * d0.x();
                     let mut x1 = vm.x() + yoffsetm * d1.x();
+
+                    let mut z0 = vb.z() + yoffsetb * d0.z();
+                    let mut z1 = vm.z() + yoffsetm * d1.z();
 
                     for y in (vb.y().ceil() as i64)..(vt.y().ceil() as i64) {
                         self.draw_scanline((x0, y as f64, z0), (x1, y as f64, z1));
@@ -269,11 +270,13 @@ pub trait Canvas {
                     let yoffsetb = vb.y().ceil() - vb.y();
                     let yoffsetm = vm.y().ceil() - vm.y();
 
-                    let (mut z0, mut z1) = (vb.z(), vb.z());
-
                     let mut x0 = vb.x() + yoffsetb * dv.x();
                     let mut x1 = vb.x() + yoffsetb * dbottom.x();
                     let mut x2 = vm.x() + yoffsetm * dtop.x();
+
+                    let mut z0 = vb.z() + yoffsetb * dv.z();
+                    let mut z1 = vb.z() + yoffsetb * dbottom.z();
+                    let mut z2 = vm.z() + yoffsetm * dtop.z();
 
                     for y in (vb.y().ceil() as i64)..(vm.y().ceil() as i64) {
                         self.draw_scanline((x0, y as f64, z0), (x1, y as f64, z1));
@@ -285,12 +288,12 @@ pub trait Canvas {
                         z1 += dbottom.z();
                     }
                     for y in (vm.y().ceil() as i64)..(vt.y().ceil() as i64) {
-                        self.draw_scanline((x0, y as f64, z0), (x2, y as f64, z1));
+                        self.draw_scanline((x0, y as f64, z0), (x2, y as f64, z2));
 
                         x0 += dv.x();
                         x2 += dtop.x();
                         z0 += dv.z();
-                        z1 += dtop.z();
+                        z2 += dtop.z();
                     }
                 }
             }
@@ -305,22 +308,23 @@ pub trait Canvas {
         let (p0, p1) = if p0.0 > p1.0 { (p1, p0) } else { (p0, p1) };
 
         let (x0, y0, z0, x1, z1) = (
-            p0.0.ceil() as i64,
-            p0.1.ceil() as i64,
+            p0.0,
+            p0.1,
             p0.2,
-            p1.0.ceil() as i64,
+            p1.0,
             p1.2,
         );
 
+        let y0 = y0.ceil() as i64;
+        let xoffset = x0.ceil() - x0;
         // calculate  values and then truncate
         // println!("x1 - x0: {} - {}", x1, x0);
 
-        let dz = z1 - z0;
-        let dx = x1 - x0;
-        let mut z = z0;
+        let z_inc = (z1 - z0) / (x1 - x0) as f64;
+        
+        let mut z = z0 + xoffset * z_inc;
 
-        let z_inc = dz / dx as f64;
-        for x in x0..x1 {
+        for x in (x0.ceil() as i64)..(x1.ceil() as i64) {
             self.plot(x as i32, y0 as i32, z);
             z += z_inc;
         }
@@ -338,7 +342,7 @@ pub trait Canvas {
 mod tests {
     use super::super::PPMImg;
     use super::*;
-    use crate::graphics::utils::{display_polygon_matrix, display_ppm};
+    use crate::graphics::utils::display_ppm;
 
     #[test]
     fn test_render_polygon_triangle() {
