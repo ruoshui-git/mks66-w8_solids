@@ -26,85 +26,98 @@ fn main() {
 
         // moving to the center
         drawer.push_matrix();
-        drawer.transform_by(&tr::mv(250., 250., 0.));
-        // drawer.transform_by(&tr::rotatex(rot as f64));
-
-        // drawing center sphere, rotate on rot
-        drawer.push_matrix();
         {
-            drawer.transform_by(
-                &(tr::rotatex(rot as f64) * tr::rotatey(rot as f64) * tr::rotatez(rot as f64)),
-            );
-            drawer.add_sphere((0., 0., 0.), 40.);
-        }
-        drawer.pop_matrix();
+            drawer.transform_by(&tr::mv(250., 250., 0.));
+            // drawer.transform_by(&tr::rotatex(rot as f64));
 
-        // draw the torus around the sphere, rotate on rot
-        drawer.push_matrix();
-        {
-            drawer.transform_by(&(tr::rotatez(45.) * tr::rotatey(rot as f64)));
-            drawer.add_torus((0., 0., 0.), 10., 70.);
-        }
-        drawer.pop_matrix();
-
-        // move away from center, draw first orbit
-        drawer.push_matrix();
-        {
-            // remember: transform_top needs to take the transformation in the opposite direction
-            drawer.transform_by(&tr::rotatez(rot as f64)); // <- var here
-            drawer.transform_by(&tr::mv(150., 0., 0.));
-
-            drawer.set_fg_color(magenta);
-            drawer.transform_by(&tr::rotatex(rot as f64));
-            drawer.transform_by(&tr::rotatey(rot as f64));
-            drawer.add_sphere((0., 0., 0.), 30.);
-
+            // drawing center sphere, rotate on rot
             drawer.push_matrix();
             {
-                drawer.transform_by(&tr::rotatex(rot as f64 * 3.)); // <- var here
-                drawer.transform_by(&tr::mv(0., 80., 0.));
-                drawer.set_fg_color(light_yellow);
-                drawer.add_sphere((0., 0., 0.), 20.);
+                drawer.transform_by(
+                    &(tr::rotatex(rot as f64) * tr::rotatey(rot as f64) * tr::rotatez(rot as f64)),
+                );
+                drawer.add_sphere((0., 0., 0.), 40.);
+            }
+            drawer.pop_matrix();
 
-                drawer.transform_by(&tr::rotatez(-45.));
-                drawer.transform_by(&tr::rotatey(rot as f64 * 4.));
-                drawer.set_fg_color(brown);
-                drawer.add_torus((0., 0., 0.), 5., 40.);
+            // draw the torus around the sphere, rotate on rot
+            drawer.push_matrix();
+            {
+                drawer.transform_by(&(tr::rotatez(45.) * tr::rotatey(rot as f64)));
+                drawer.add_torus((0., 0., 0.), 10., 70.);
+            }
+            drawer.pop_matrix();
+
+            // move away from center, draw first orbit
+            drawer.push_matrix();
+            {
+                // remember: transform_top needs to take the transformation in the opposite direction
+                drawer.transform_by(&tr::rotatez(rot as f64)); // <- var here
+                drawer.transform_by(&tr::mv(150., 0., 0.));
+
+                drawer.push_matrix();
+                {
+                    drawer.transform_by(&tr::rotatex(rot as f64));
+                    drawer.transform_by(&tr::rotatey(rot as f64));
+                    drawer.set_fg_color(magenta);
+                    drawer.add_sphere((0., 0., 0.), 30.);
+                }
+                drawer.pop_matrix();
+
+                // draw 1st satellite
+                drawer.push_matrix();
+                {
+                    drawer.transform_by(&tr::rotatex(rot as f64 * 3.)); // <- var here
+                    drawer.transform_by(&tr::mv(0., 80., 0.));
+                    drawer.set_fg_color(light_yellow);
+                    drawer.add_sphere((0., 0., 0.), 20.);
+
+                    // drawer.transform_by(&);
+                    drawer.transform_by(
+                        &(tr::rotatey(rot as f64 * 4.)
+                            * tr::rotatex(rot as f64 * 4.)
+                            * tr::rotatez(-45.)),
+                    );
+                    drawer.set_fg_color(brown);
+                    drawer.add_torus((0., 0., 0.), 5., 40.);
+                }
+                drawer.pop_matrix();
+
+                // 2nd satellite
+                drawer.push_matrix();
+                {
+                    drawer.transform_by(&tr::rotatex(rot as f64 * 3.));
+                    drawer.transform_by(&tr::mv(0., -80., 0.));
+                    drawer.add_sphere((0., 0., 0.), 20.);
+                }
+                drawer.pop_matrix();
             }
             drawer.pop_matrix();
 
             drawer.push_matrix();
             {
-                drawer.transform_by(&tr::rotatex(rot as f64 * 3.));
-                drawer.transform_by(&tr::mv(0., -80., 0.));
-                drawer.add_sphere((0., 0., 0.), 20.);
-            }
-            drawer.pop_matrix();
-        }
-        drawer.pop_matrix();
+                drawer.transform_by(&tr::rotatez(rot as f64)); // <- var here
+                drawer.transform_by(&tr::mv(-200., 0., 0.));
 
-        drawer.push_matrix();
-        {
-            drawer.transform_by(&tr::rotatez(rot as f64)); // <- var here
-            drawer.transform_by(&tr::mv(-200., 0., 0.));
+                drawer.add_sphere((0., 0., 0.), 30.);
 
-            drawer.add_sphere((0., 0., 0.), 30.);
+                drawer.push_matrix();
+                {
+                    drawer.transform_by(&tr::rotatez(-rot as f64 * 3.));
+                    drawer.transform_by(&tr::mv(80., 0., 0.));
 
-            drawer.push_matrix();
-            {
-                drawer.transform_by(&tr::rotatez(-rot as f64 * 3.));
-                drawer.transform_by(&tr::mv(80., 0., 0.));
+                    drawer.add_sphere((0., 0., 0.), 20.);
+                }
+                drawer.pop_matrix();
 
-                drawer.add_sphere((0., 0., 0.), 20.);
-            }
-            drawer.pop_matrix();
+                drawer.push_matrix();
+                {
+                    drawer.transform_by(&tr::rotatez(-rot as f64 * 3.));
+                    drawer.transform_by(&tr::mv(-80., 0., 0.));
 
-            drawer.push_matrix();
-            {
-                drawer.transform_by(&tr::rotatez(-rot as f64 * 3.));
-                drawer.transform_by(&tr::mv(-80., 0., 0.));
-
-                drawer.add_sphere((0., 0., 0.), 20.);
+                    drawer.add_sphere((0., 0., 0.), 20.);
+                }
+                drawer.pop_matrix();
             }
             drawer.pop_matrix();
         }

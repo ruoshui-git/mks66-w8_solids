@@ -9,11 +9,11 @@ pub struct Drawer {
 
 // helpers
 impl Drawer {
-    fn render_edges_with_stack(&mut self, m: &Matrix) {
+    pub fn render_edges_with_stack(&mut self, m: &Matrix) {
         self.canvas.render_edge_matrix(&(m * self.get_top_matrix()))
     }
 
-    fn render_polygons_with_stack(&mut self, m: &Matrix) {
+    pub fn render_polygons_with_stack(&mut self, m: &Matrix) {
         self.canvas
             .render_polygon_matrix(&(m * self.get_top_matrix()))
     }
@@ -55,6 +55,12 @@ impl Drawer {
 
     pub fn clear(&mut self) {
         self.canvas.clear();
+
+        // this will cause unexpected behaviors
+        // self.stack = Self::new_stack();
+    }
+
+    pub fn reset_stack(&mut self) {
         self.stack = Self::new_stack();
     }
 
