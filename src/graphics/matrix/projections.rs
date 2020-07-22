@@ -11,6 +11,11 @@ use crate::graphics::{utils::mapper, matrix::Matrix};
 ///
 #[rustfmt::skip]
 pub fn perspective(fov_rad: f64, aspect: f64, near: f64, far: f64) -> Matrix {
+
+    todo!("According to https://en.wikipedia.org/wiki/Graphics_pipeline#Projection, this projection matrix is the transposed version of what I should be using. Fix it.");
+
+    todo!("Impl clipping");
+
     let f = 1. / (fov_rad / 2.).tan();
     let range_inv = 1. / (near - far);
     Matrix::new(4, 4, vec![
@@ -40,6 +45,9 @@ pub fn orthographic(left: f64, right: f64, bottom: f64, top: f64, near: f64, far
         row4col1,   row4col2,  row4col3, 1.,
     ])
 }
+
+
+
 
 impl Matrix {
 
